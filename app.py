@@ -53,7 +53,7 @@ st.markdown(
 def load_spatial_data():
     districts = gpd.GeoDataFrame()
     try:
-        districts = gpd.read_file("data/malawi_districts.geojson")
+        districts = gpd.read_file("malawi_districts.geojson")
         if districts.crs != "EPSG:4326":
             districts = districts.to_crs(epsg=4326)
     except Exception as e:
@@ -61,7 +61,7 @@ def load_spatial_data():
 
     kbas = gpd.GeoDataFrame()
     try:
-        kbas = gpd.read_file("data/key_biodiversity_areas.geojson")
+        kbas = gpd.read_file("key_biodiversity_areas.geojson")
         if kbas.crs != "EPSG:4326":
             kbas = kbas.to_crs(epsg=4326)
     except Exception as e:
@@ -69,7 +69,7 @@ def load_spatial_data():
 
     pa_gdf = gpd.GeoDataFrame()
     try:
-        pa_gdf = gpd.read_file("data/Malawi_Protected_Areas.geojson")
+        pa_gdf = gpd.read_file("Malawi_Protected_Areas.geojson")
         if pa_gdf.crs != "EPSG:4326":
             pa_gdf = pa_gdf.to_crs(epsg=4326)
     except Exception as e:
@@ -77,7 +77,7 @@ def load_spatial_data():
 
     wetlands = gpd.GeoDataFrame()
     try:
-        wetlands = gpd.read_file("data/Wetlands.geojson")
+        wetlands = gpd.read_file("Wetlands.geojson")
         if wetlands.crs != "EPSG:4326":
             wetlands = wetlands.to_crs(epsg=4326)
     except Exception as e:
@@ -94,7 +94,7 @@ def load_spatial_data():
     projects = gpd.GeoDataFrame()
     raw_df = pd.DataFrame()
     try:
-        projects = gpd.read_file("data/cleaned_projects.geojson")
+        projects = gpd.read_file("cleaned_projects.geojson")
         if projects.crs != "EPSG:4326":
             projects = projects.to_crs(epsg=4326)
         raw_df = pd.DataFrame(projects.drop(columns="geometry", errors="ignore"))
