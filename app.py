@@ -85,7 +85,9 @@ def load_spatial_data():
 
     ecosystems = gpd.GeoDataFrame()
     try:
-        ecosystems = gpd.read_file("https://github.com/giso265/ESIA-Tracker/releases/download/v1.0.0/malawi_ecosystems.geojson")
+        ecosystems = gpd.read_file(
+            "https://github.com/giso265/ESIA-Tracker/releases/download/v1.0.0/malawi_ecosystems.geojson"
+        )
         if ecosystems.crs != "EPSG:4326":
             ecosystems = ecosystems.to_crs(epsg=4326)
     except Exception as e:
@@ -123,6 +125,7 @@ def find_district_column(df):
                 return col
     return None
 
+
 dist_name_col_in_districts = find_district_column(districts_gdf) or "district_name"
 
 if not projects_gdf.empty and not districts_gdf.empty:
@@ -130,7 +133,17 @@ if not projects_gdf.empty and not districts_gdf.empty:
     if dist_name_col_in_districts in joined.columns:
         district_aggs = (
             joined.groupby(joined.index)[dist_name_col_in_districts]
-            .apply(lambda s: ", ".join(sorted(set(str(x) for x in s.dropna() if str(x).lower() not in ["nan", "none", ""]))))
+            .apply(
+                lambda s: ", ".join(
+                    sorted(
+                        set(
+                            str(x)
+                            for x in s.dropna()
+                            if str(x).lower() not in ["nan", "none", ""]
+                        )
+                    )
+                )
+            )
             .to_dict()
         )
         projects_gdf["spatial_districts"] = projects_gdf.index.map(district_aggs)
@@ -139,11 +152,30 @@ if not projects_gdf.empty and not districts_gdf.empty:
 
 if not projects_gdf.empty and not kba_gdf.empty:
     kba_join = gpd.sjoin(projects_gdf, kba_gdf, how="left", predicate="intersects")
-    kba_col = next((c for c in kba_join.columns if any(k in c.lower() for k in ["sitname", "natname", "kba", "siterecid"]) and not c.lower().startswith("index")), None)
+    kba_col = next(
+        (
+            c
+            for c in kba_join.columns
+            if any(k in c.lower() for k in ["sitname", "natname", "kba", "siterecid"])
+            and not c.lower().startswith("index")
+        ),
+        None,
+    )
     if kba_col:
         kba_aggs = (
             kba_join.groupby(kba_join.index)[kba_col]
-            .apply(lambda s: ", ".join(sorted(set(str(x) for x in s.dropna() if str(x).lower() not in ["nan", "none", ""] and not str(x).isdigit()))))
+            .apply(
+                lambda s: ", ".join(
+                    sorted(
+                        set(
+                            str(x)
+                            for x in s.dropna()
+                            if str(x).lower() not in ["nan", "none", ""]
+                            and not str(x).isdigit()
+                        )
+                    )
+                )
+            )
             .to_dict()
         )
         projects_gdf["spatial_kbas"] = projects_gdf.index.map(kba_aggs)
@@ -163,7 +195,18 @@ if not projects_gdf.empty and not pa_gdf.empty:
     if pa_col:
         pa_aggs = (
             pa_join.groupby(pa_join.index)[pa_col]
-            .apply(lambda s: ", ".join(sorted(set(str(x) for x in s.dropna() if str(x).lower() not in ["nan", "none", ""] and not str(x).isdigit()))))
+            .apply(
+                lambda s: ", ".join(
+                    sorted(
+                        set(
+                            str(x)
+                            for x in s.dropna()
+                            if str(x).lower() not in ["nan", "none", ""]
+                            and not str(x).isdigit()
+                        )
+                    )
+                )
+            )
             .to_dict()
         )
         projects_gdf["spatial_pas"] = projects_gdf.index.map(pa_aggs)
@@ -172,16 +215,37 @@ if not projects_gdf.empty and not pa_gdf.empty:
 
 eco_name_col = None
 if not ecosystems_gdf.empty:
-    eco_name_col = next((c for c in ecosystems_gdf.columns if c.lower().strip() == "ecosystem"), None)
+    eco_name_col = next(
+        (c for c in ecosystems_gdf.columns if c.lower().strip() == "ecosystem"), None
+    )
     if not eco_name_col:
-        eco_name_col = next((c for c in ecosystems_gdf.columns if "eco" in c.lower() or "type" in c.lower() or "class" in c.lower()), None)
+        eco_name_col = next(
+            (
+                c
+                for c in ecosystems_gdf.columns
+                if "eco" in c.lower() or "type" in c.lower() or "class" in c.lower()
+            ),
+            None,
+        )
 
 if not projects_gdf.empty and not ecosystems_gdf.empty and eco_name_col:
-    eco_join = gpd.sjoin(projects_gdf, ecosystems_gdf, how="left", predicate="intersects")
+    eco_join = gpd.sjoin(
+        projects_gdf, ecosystems_gdf, how="left", predicate="intersects"
+    )
     if eco_name_col in eco_join.columns:
         eco_aggs = (
             eco_join.groupby(eco_join.index)[eco_name_col]
-            .apply(lambda s: ", ".join(sorted(set(str(x) for x in s.dropna() if str(x).lower() not in ["nan", "none", ""]))))
+            .apply(
+                lambda s: ", ".join(
+                    sorted(
+                        set(
+                            str(x)
+                            for x in s.dropna()
+                            if str(x).lower() not in ["nan", "none", ""]
+                        )
+                    )
+                )
+            )
             .to_dict()
         )
         projects_gdf["spatial_ecosystems"] = projects_gdf.index.map(eco_aggs)
@@ -197,6 +261,7 @@ def find_sector_column(df):
             if not any(ig in col.lower() for ig in ignored_terms):
                 return col
     return None
+
 
 sector_col = find_sector_column(projects_gdf) or find_sector_column(df_raw)
 
@@ -254,9 +319,7 @@ with st.sidebar:
 
     if sector_col and not active_df.empty:
         sector_df = (
-            active_df.groupby(sector_col)
-            .size()
-            .reset_index(name="Count")
+            active_df.groupby(sector_col).size().reset_index(name="Count")
         )
 
         fig_sector = px.pie(
@@ -419,7 +482,7 @@ folium.TileLayer(
 
 folium.TileLayer(
     tiles="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attr='&copy; OpenStreetMap contributors',
+    attr="&copy; OpenStreetMap contributors",
     name="OpenStreetMap Standard",
     subdomains="abc",
     max_zoom=19,
@@ -455,7 +518,11 @@ fg_projects = folium.FeatureGroup(name=label_projects, show=True)
 if not districts_gdf.empty:
     for _, row in districts_gdf.iterrows():
         dist_name = row.get(dist_name_col_in_districts, "District")
-        p_count = projects_gdf.geometry.intersects(row["geometry"]).sum() if not projects_gdf.empty else 0
+        p_count = (
+            projects_gdf.geometry.intersects(row["geometry"]).sum()
+            if not projects_gdf.empty
+            else 0
+        )
 
         popup_html = f"""
         <div style="font-family: Arial, sans-serif; font-size: 13px; width: 170px;">
@@ -632,20 +699,31 @@ if not projects_gdf.empty:
             else "N/A"
         )
 
-        d_name = clean_val(row.get("spatial_districts")) or clean_val(row.get("District"))
+        d_name = clean_val(row.get("spatial_districts")) or clean_val(
+            row.get("District")
+        )
         kba_name = clean_val(row.get("spatial_kbas"))
         pa_intersect_name = clean_val(row.get("spatial_pas"))
         eco_type = clean_val(row.get("spatial_ecosystems")) or "Unclassified"
 
-        pa_list = [x.strip() for x in (pa_intersect_name or "").split(",") if x.strip()]
+        pa_list = [
+            x.strip() for x in (pa_intersect_name or "").split(",") if x.strip()
+        ]
         kba_list = [x.strip() for x in (kba_name or "").split(",") if x.strip()]
 
         unique_kbas = [
-            k for k in kba_list 
-            if not any(k.lower() in p.lower() or p.lower() in k.lower() for p in pa_list)
+            k
+            for k in kba_list
+            if not any(
+                k.lower() in p.lower() or p.lower() in k.lower() for p in pa_list
+            )
         ]
 
-        eco_style = "color: #757575;" if eco_type == "Unclassified" else "color: #2e7d32; font-weight: bold;"
+        eco_style = (
+            "color: #757575;"
+            if eco_type == "Unclassified"
+            else "color: #2e7d32; font-weight: bold;"
+        )
 
         popup_html = f"""
         <div style="font-family: Arial, sans-serif; font-size: 13px; width: 250px;">
@@ -834,4 +912,4 @@ search_js = """
 m.get_root().html.add_child(folium.Element(search_js))
 
 # RENDER MAP CANVAS
-st_folium(m, width="stretch", height=800)
+st_folium(m, width="100%", height=800)
