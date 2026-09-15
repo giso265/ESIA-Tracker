@@ -83,8 +83,8 @@ def load_spatial_data():
     except Exception as e:
         st.sidebar.error(f"Wetlands load error: {e}")
 
-  ecosystems = gpd.GeoDataFrame()
-  try:
+    ecosystems = gpd.GeoDataFrame()
+    try:
         ecosystems = gpd.read_file("https://github.com/giso265/ESIA-Tracker/releases/download/v1.0.0/malawi_ecosystems.geojson")
         if ecosystems.crs != "EPSG:4326":
             ecosystems = ecosystems.to_crs(epsg=4326)
