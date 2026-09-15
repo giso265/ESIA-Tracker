@@ -281,7 +281,7 @@ with st.sidebar:
             ),
         )
 
-        st.plotly_chart(fig_sector, use_container_width=True)
+        st.plotly_chart(fig_sector, width="stretch")
 
     if not projects_gdf.empty and "spatial_districts" in projects_gdf.columns:
         exploded_dists = (
@@ -314,7 +314,7 @@ with st.sidebar:
             xaxis=dict(tickangle=-30, tickfont=dict(size=12)),
             yaxis=dict(tickfont=dict(size=12)),
         )
-        st.plotly_chart(fig_line, use_container_width=True)
+        st.plotly_chart(fig_line, width="stretch")
 
 
 # --- 4. MAP CANVAS SETUP WITH BASEMAPS ---
@@ -834,4 +834,4 @@ search_js = """
 m.get_root().html.add_child(folium.Element(search_js))
 
 # RENDER MAP CANVAS
-st_folium(m, use_container_width=True, height=800)
+st_folium(m, width="stretch", height=800)
