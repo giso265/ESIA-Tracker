@@ -56,32 +56,32 @@ def load_spatial_data():
         districts = gpd.read_file("malawi_districts.geojson")
         if districts.crs != "EPSG:4326":
             districts = districts.to_crs(epsg=4326)
-    except Exception as e:
-        st.sidebar.error(f"Districts load error: {e}")
+    except Exception:
+        pass
 
     kbas = gpd.GeoDataFrame()
     try:
         kbas = gpd.read_file("key_biodiversity_areas.geojson")
         if kbas.crs != "EPSG:4326":
             kbas = kbas.to_crs(epsg=4326)
-    except Exception as e:
-        st.sidebar.error(f"KBAs load error: {e}")
+    except Exception:
+        pass
 
     pa_gdf = gpd.GeoDataFrame()
     try:
         pa_gdf = gpd.read_file("Malawi_Protected_Areas.geojson")
         if pa_gdf.crs != "EPSG:4326":
             pa_gdf = pa_gdf.to_crs(epsg=4326)
-    except Exception as e:
-        st.sidebar.error(f"Protected Areas load error: {e}")
+    except Exception:
+        pass
 
     wetlands = gpd.GeoDataFrame()
     try:
         wetlands = gpd.read_file("Wetlands.geojson")
         if wetlands.crs != "EPSG:4326":
             wetlands = wetlands.to_crs(epsg=4326)
-    except Exception as e:
-        st.sidebar.error(f"Wetlands load error: {e}")
+    except Exception:
+        pass
 
     ecosystems = gpd.GeoDataFrame()
     try:
@@ -90,8 +90,8 @@ def load_spatial_data():
         )
         if ecosystems.crs != "EPSG:4326":
             ecosystems = ecosystems.to_crs(epsg=4326)
-    except Exception as e:
-        st.sidebar.error(f"Ecosystems load error: {e}")
+    except Exception:
+        pass
 
     projects = gpd.GeoDataFrame()
     raw_df = pd.DataFrame()
@@ -100,8 +100,8 @@ def load_spatial_data():
         if projects.crs != "EPSG:4326":
             projects = projects.to_crs(epsg=4326)
         raw_df = pd.DataFrame(projects.drop(columns="geometry", errors="ignore"))
-    except Exception as e:
-        st.sidebar.error(f"Cleaned projects load error: {e}")
+    except Exception:
+        pass
 
     return districts, kbas, pa_gdf, wetlands, ecosystems, projects, raw_df
 
@@ -149,6 +149,9 @@ if not projects_gdf.empty and not districts_gdf.empty:
         projects_gdf["spatial_districts"] = projects_gdf.index.map(district_aggs)
     else:
         projects_gdf["spatial_districts"] = None
+else:
+    if not projects_gdf.empty:
+        projects_gdf["spatial_districts"] = None
 
 if not projects_gdf.empty and not kba_gdf.empty:
     kba_join = gpd.sjoin(projects_gdf, kba_gdf, how="left", predicate="intersects")
@@ -179,6 +182,11 @@ if not projects_gdf.empty and not kba_gdf.empty:
             .to_dict()
         )
         projects_gdf["spatial_kbas"] = projects_gdf.index.map(kba_aggs)
+    else:
+        projects_gdf["spatial_kbas"] = None
+else:
+    if not projects_gdf.empty:
+        projects_gdf["spatial_kbas"] = None
 
 if not projects_gdf.empty and not pa_gdf.empty:
     pa_join = gpd.sjoin(projects_gdf, pa_gdf, how="left", predicate="intersects")
@@ -211,6 +219,9 @@ if not projects_gdf.empty and not pa_gdf.empty:
         )
         projects_gdf["spatial_pas"] = projects_gdf.index.map(pa_aggs)
     else:
+        projects_gdf["spatial_pas"] = None
+else:
+    if not projects_gdf.empty:
         projects_gdf["spatial_pas"] = None
 
 eco_name_col = None
@@ -249,6 +260,11 @@ if not projects_gdf.empty and not ecosystems_gdf.empty and eco_name_col:
             .to_dict()
         )
         projects_gdf["spatial_ecosystems"] = projects_gdf.index.map(eco_aggs)
+    else:
+        projects_gdf["spatial_ecosystems"] = None
+else:
+    if not projects_gdf.empty:
+        projects_gdf["spatial_ecosystems"] = None
 
 
 def find_sector_column(df):
@@ -302,7 +318,7 @@ with st.sidebar:
     if not projects_gdf.empty and "spatial_districts" in projects_gdf.columns:
         all_dists = set()
         for d_str in projects_gdf["spatial_districts"].dropna():
-            for d in d_str.split(","):
+            for d in str(d_str).split(","):
                 if d.strip():
                     all_dists.add(d.strip())
         dist_count = len(all_dists)
@@ -347,37 +363,38 @@ with st.sidebar:
         st.plotly_chart(fig_sector, use_container_width=True)
 
     if not projects_gdf.empty and "spatial_districts" in projects_gdf.columns:
-        exploded_dists = (
-            projects_gdf["spatial_districts"]
-            .str.split(", ")
-            .explode()
-            .value_counts()
-            .reset_index()
-        )
-        exploded_dists.columns = ["District", "Count"]
-        dist_df = exploded_dists.head(8)
+        valid_dist_series = projects_gdf["spatial_districts"].dropna().astype(str)
+        if not valid_dist_series.empty:
+            exploded_dists = (
+                valid_dist_series.str.split(", ")
+                .explode()
+                .value_counts()
+                .reset_index()
+            )
+            exploded_dists.columns = ["District", "Count"]
+            dist_df = exploded_dists.head(8)
 
-        fig_line = px.line(
-            dist_df,
-            x="District",
-            y="Count",
-            markers=True,
-            title="Approved Projects per District",
-            color_discrete_sequence=["#1b5e20"],
-        )
-        fig_line.update_traces(
-            line=dict(width=3),
-            marker=dict(size=8),
-        )
-        fig_line.update_layout(
-            margin=dict(l=10, r=10, t=40, b=10),
-            title_font_size=18,
-            xaxis_title="District",
-            yaxis_title="Projects",
-            xaxis=dict(tickangle=-30, tickfont=dict(size=12)),
-            yaxis=dict(tickfont=dict(size=12)),
-        )
-        st.plotly_chart(fig_line, use_container_width=True)
+            fig_line = px.line(
+                dist_df,
+                x="District",
+                y="Count",
+                markers=True,
+                title="Approved Projects per District",
+                color_discrete_sequence=["#1b5e20"],
+            )
+            fig_line.update_traces(
+                line=dict(width=3),
+                marker=dict(size=8),
+            )
+            fig_line.update_layout(
+                margin=dict(l=10, r=10, t=40, b=10),
+                title_font_size=18,
+                xaxis_title="District",
+                yaxis_title="Projects",
+                xaxis=dict(tickangle=-30, tickfont=dict(size=12)),
+                yaxis=dict(tickfont=dict(size=12)),
+            )
+            st.plotly_chart(fig_line, use_container_width=True)
 
 
 # --- 4. MAP CANVAS SETUP WITH BASEMAPS ---
@@ -707,9 +724,9 @@ if not projects_gdf.empty:
         eco_type = clean_val(row.get("spatial_ecosystems")) or "Unclassified"
 
         pa_list = [
-            x.strip() for x in (pa_intersect_name or "").split(",") if x.strip()
+            x.strip() for x in str(pa_intersect_name or "").split(",") if x.strip()
         ]
-        kba_list = [x.strip() for x in (kba_name or "").split(",") if x.strip()]
+        kba_list = [x.strip() for x in str(kba_name or "").split(",") if x.strip()]
 
         unique_kbas = [
             k
@@ -802,14 +819,10 @@ search_js = """
         
         if (mapContainer && window[mapContainer.id]) {
             var map = window[mapContainer.id];
-            
-            // Target Leaflet's top-left container housing the zoom buttons (+ / -)
             var zoomContainer = mapContainer.querySelector('.leaflet-top.leaflet-left');
             
             if (zoomContainer) {
                 clearInterval(timer);
-                
-                // Prevent duplicate elements on map rerenders
                 if (document.getElementById('mepa-search-wrapper')) return;
 
                 var searchDiv = document.createElement('div');
@@ -825,11 +838,9 @@ search_js = """
                     <button id="mapClearBtn" style="background: #c62828; color: white; border: none; padding: 5px 7px; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: bold;">❌</button>
                 `;
 
-                // Prevent map interactions from leaking through the search UI
                 L.DomEvent.disableClickPropagation(searchDiv);
                 L.DomEvent.disableScrollPropagation(searchDiv);
 
-                // Append search box below the zoom controls
                 zoomContainer.appendChild(searchDiv);
 
                 var searchGroup = L.layerGroup().addTo(map);
@@ -840,7 +851,6 @@ search_js = """
 
                     searchGroup.clearLayers();
 
-                    // 1. Direct Lat, Lon Parsing
                     var coords = inputVal.split(',');
                     if (coords.length === 2) {
                         var lat = parseFloat(coords[0]);
@@ -863,7 +873,6 @@ search_js = """
                         }
                     }
 
-                    // 2. Nominatim OpenStreetMap Search API
                     fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(inputVal))
                         .then(function(res) { return res.json(); })
                         .then(function(data) {
@@ -888,7 +897,7 @@ search_js = """
                             }
                         })
                         .catch(function() {
-                            alert("Error looking up location. Please check your connection.");
+                            alert("Error looking up location.");
                         });
                 }
 
@@ -911,5 +920,5 @@ search_js = """
 
 m.get_root().html.add_child(folium.Element(search_js))
 
-# RENDER MAP CANVAS
-st_folium(m, use_container_width=True, height=800)
+# RENDER MAP CANVAS SAFELY WITHOUT UNPACKING OR KEYWORD TYPING CONFLICTS
+st_data = st_folium(m, height=750, use_container_width=True)
