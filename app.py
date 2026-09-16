@@ -287,7 +287,7 @@ with st.sidebar:
     logo_col1, logo_col2 = st.columns([1, 3], vertical_alignment="center")
     with logo_col1:
         try:
-            st.image("data/mepa_logo.png", width=80)
+            st.image("mepa_logo.png", width=80)
         except Exception:
             st.markdown("### 🏛️")
 
