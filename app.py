@@ -921,4 +921,9 @@ search_js = """
 m.get_root().html.add_child(folium.Element(search_js))
 
 # RENDER MAP CANVAS SAFELY WITHOUT UNPACKING OR KEYWORD TYPING CONFLICTS
-st_data = st_folium(m, height=750, use_container_width=True)
+st_data = st_folium(
+    m,
+    height=750,
+    use_container_width=True,
+    returned_objects=[],
+)
